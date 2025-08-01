@@ -25,7 +25,7 @@ app.use(helmet({
 }));
 app.use(cors({
   origin: process.env.NODE_ENV === 'production' 
-    ? ['https://your-frontend-domain.com'] 
+    ? ['https://notebooklm-frontend.onrender.com', 'https://your-custom-domain.com'] 
     : ['http://localhost:3000'],
   credentials: true
 }));

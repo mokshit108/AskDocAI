@@ -1,0 +1,79 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* React PDF styles - fallback if module imports fail */
+@import url('https://unpkg.com/react-pdf@10.0.1/dist/Page/AnnotationLayer.css');
+@import url('https://unpkg.com/react-pdf@10.0.1/dist/Page/TextLayer.css');
+
+/* Custom styles */
+.chat-message {
+  @apply mb-4 p-3 rounded-lg;
+}
+
+.user-message {
+  @apply bg-blue-100 ml-8;
+}
+
+.ai-message {
+  @apply bg-gray-100 mr-8;
+}
+
+.citation-button {
+  @apply inline-block text-white px-2 py-1 rounded text-xs ml-1 cursor-pointer;
+  background-color: rgba(180, 0, 170, 1);
+  transition: background-color 0.2s ease;
+}
+
+.citation-button:hover {
+  background-color: rgba(160, 0, 150, 1);
+}
+
+.pdf-viewer {
+  @apply border border-gray-300 rounded-lg overflow-hidden;
+}
+
+.upload-zone {
+  @apply border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-gray-400 transition-colors;
+}
+
+.upload-zone.dragover {
+  @apply border-blue-500 bg-blue-50;
+}
+
+.upload-zone-custom {
+  @apply text-center cursor-pointer transition-all duration-200 p-6 rounded-xl;
+}
+
+.upload-zone-custom:hover {
+  @apply bg-gray-50;
+}
+
+.upload-zone-custom.dragover {
+  @apply bg-purple-50;
+}
+
+.violet-button {
+  background-color: rgba(180, 0, 170, 1);
+  transition: background-color 0.2s ease;
+}
+
+.violet-button:hover {
+  background-color: rgba(160, 0, 150, 1);
+}
+
+/* Snackbar animations */
+@keyframes slide-down {
+  from {
+    transform: translate(-50%, -100%);
+    opacity: 0;
+  }
+  to {
+    transform: translate(-50%, 0);
+    opacity: 1;
+  }
+}
+
+.animate-slide-down {
+  animation: slide-down 0.3s ease-out;
+}

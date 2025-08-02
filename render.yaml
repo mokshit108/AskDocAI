@@ -25,6 +25,8 @@ services:
         value: 50000000
       - key: UPLOAD_PATH
         value: ./uploads
+      - key: ALLOWED_ORIGINS
+        value: https://notebooklm-frontend.onrender.com,https://askmypdf-hlcu.onrender.com
 
   # Frontend Static Site
   - type: static

@@ -23,10 +23,13 @@ app.use(helmet({
   },
   frameguard: { action: 'sameorigin' }
 }));
+// CORS configuration
+const allowedOrigins = process.env.NODE_ENV === 'production' 
+  ? (process.env.ALLOWED_ORIGINS || 'https://notebooklm-frontend.onrender.com,https://askmypdf-hlcu.onrender.com').split(',')
+  : ['http://localhost:3000'];
+
 app.use(cors({
-  origin: process.env.NODE_ENV === 'production' 
-    ? ['https://notebooklm-frontend.onrender.com', 'https://your-custom-domain.com'] 
-    : ['http://localhost:3000'],
+  origin: allowedOrigins,
   credentials: true
 }));
 app.use(morgan('combined'));

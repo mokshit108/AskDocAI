@@ -13,20 +13,23 @@ const { apiLimiter } = require('./src/middleware/rateLimiter');
 const app = express();
 const PORT = process.env.PORT || 5000;
 
+// CORS and CSP configuration
+const allowedOrigins = process.env.NODE_ENV === 'production' 
+  ? (process.env.ALLOWED_ORIGINS || 'https://notebooklm-frontend.onrender.com,https://askmypdf-hlcu.onrender.com').split(',')
+  : ['http://localhost:3000'];
+
 // Middleware
 app.use(helmet({
   contentSecurityPolicy: {
     directives: {
       ...helmet.contentSecurityPolicy.getDefaultDirectives(),
-      "frame-ancestors": ["'self'", "http://localhost:3000", "https://localhost:3000"],
+      "frame-ancestors": ["'self'", ...allowedOrigins],
+      "object-src": ["'self'"],
+      "media-src": ["'self'"],
     },
   },
-  frameguard: { action: 'sameorigin' }
+  frameguard: false // Disable frameguard since we're using CSP frame-ancestors
 }));
-// CORS configuration
-const allowedOrigins = process.env.NODE_ENV === 'production' 
-  ? (process.env.ALLOWED_ORIGINS || 'https://notebooklm-frontend.onrender.com,https://askmypdf-hlcu.onrender.com').split(',')
-  : ['http://localhost:3000'];
 
 app.use(cors({
   origin: allowedOrigins,

@@ -84,6 +84,8 @@ class DocumentController {
       const filePath = path.resolve(document.filePath);
       res.setHeader('Content-Type', 'application/pdf');
       res.setHeader('Content-Disposition', `inline; filename="${document.originalName}"`);
+      res.setHeader('Cache-Control', 'public, max-age=3600');
+      // Don't set X-Frame-Options here as we're using CSP frame-ancestors instead
       
       const fileBuffer = await fs.readFile(filePath);
       res.send(fileBuffer);

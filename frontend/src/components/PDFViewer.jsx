@@ -20,36 +20,22 @@ const PDFViewer = ({ documentId, pdfUrl, targetPage, onPageChange }) => {
   const [error, setError] = useState(null);
   const [useIframeFallback, setUseIframeFallback] = useState(false);
 
-  // Debug logging and URL validation
+  // URL validation
   useEffect(() => {
-    console.log('PDFViewer initialized with:', { documentId, pdfUrl, targetPage });
-    
     // Test PDF URL accessibility
     if (pdfUrl) {
-      console.log('Testing PDF URL:', pdfUrl);
-      
       fetch(pdfUrl, { method: 'HEAD' })
         .then(response => {
-          console.log('PDF URL test result:', {
-            status: response.status,
-            statusText: response.statusText,
-            contentType: response.headers.get('content-type'),
-            contentLength: response.headers.get('content-length')
-          });
-          
           if (!response.ok) {
-            console.error('PDF URL is not accessible:', response.status);
             setError(`PDF URL returned ${response.status}: ${response.statusText}`);
             setLoading(false);
           }
         })
         .catch(error => {
-          console.error('PDF URL test failed:', error);
           setError(`Failed to access PDF URL: ${error.message}`);
           setLoading(false);
         });
     } else {
-      console.error('No PDF URL provided');
       setError('No PDF URL provided');
       setLoading(false);
     }
@@ -75,7 +61,6 @@ const PDFViewer = ({ documentId, pdfUrl, targetPage, onPageChange }) => {
     if (loading) {
       const timeout = setTimeout(() => {
         if (loading) {
-          console.warn('PDF loading timeout reached');
           setError('PDF loading timeout. The document may be too large or the server is not responding.');
           setLoading(false);
         }
@@ -86,27 +71,18 @@ const PDFViewer = ({ documentId, pdfUrl, targetPage, onPageChange }) => {
   }, [loading]);
 
   const onDocumentLoadSuccess = ({ numPages }) => {
-    console.log('PDF loaded successfully with', numPages, 'pages');
     setNumPages(numPages);
     setLoading(false);
     setError(null);
   };
 
   const onDocumentLoadError = (error) => {
-    console.error('PDF load error:', error);
-    console.error('Error details:', {
-      message: error.message,
-      name: error.name,
-      pdfUrl
-    });
-    
     const errorMessage = error.message || error.toString() || 'Unknown error';
     setError(`Failed to load PDF with react-pdf: ${errorMessage}`);
     setLoading(false);
   };
 
   const tryIframeFallback = () => {
-    console.log('Switching to iframe fallback');
     setUseIframeFallback(true);
     setError(null);
     setLoading(false);
@@ -230,8 +206,6 @@ const PDFViewer = ({ documentId, pdfUrl, targetPage, onPageChange }) => {
             src={pdfUrl}
             className="w-full h-full border-0"
             title="PDF Document"
-            onLoad={() => console.log('PDF iframe loaded successfully')}
-            onError={(e) => console.error('PDF iframe error:', e)}
           />
         </div>
       </div>

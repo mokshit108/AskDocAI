@@ -13,26 +13,17 @@ const SimplePDFViewer = ({ documentId, pdfUrl, targetPage, onPageChange }) => {
   const [error, setError] = useState(null);
   const [useIframe, setUseIframe] = useState(true); // Start with iframe by default
 
-  console.log('SimplePDFViewer loaded with URL:', pdfUrl);
-  
   // Test URL accessibility on mount
   useEffect(() => {
     if (pdfUrl) {
-      console.log('Testing PDF URL accessibility:', pdfUrl);
       fetch(pdfUrl, { method: 'HEAD' })
         .then(response => {
-          console.log('PDF URL test result:', {
-            status: response.status,
-            statusText: response.statusText,
-            contentType: response.headers.get('content-type'),
-            contentLength: response.headers.get('content-length')
-          });
           if (!response.ok) {
-            console.error('PDF URL not accessible:', response.status, response.statusText);
+            setError(`PDF URL not accessible: ${response.status} ${response.statusText}`);
           }
         })
         .catch(error => {
-          console.error('PDF URL test failed:', error);
+          setError(`PDF URL test failed: ${error.message}`);
         });
     }
   }, [pdfUrl]);
@@ -49,20 +40,17 @@ const SimplePDFViewer = ({ documentId, pdfUrl, targetPage, onPageChange }) => {
   }, [pdfUrl]);
 
   const onDocumentLoadSuccess = ({ numPages }) => {
-    console.log('PDF loaded successfully, pages:', numPages);
     setNumPages(numPages);
     setLoading(false);
     setError(null);
   };
 
   const onDocumentLoadError = (error) => {
-    console.error('PDF load error:', error);
     setError('Failed to load PDF with advanced viewer');
     setLoading(false);
   };
 
   const switchToIframe = () => {
-    console.log('Switching to iframe viewer');
     setUseIframe(true);
     setError(null);
     setLoading(false);
@@ -160,9 +148,7 @@ const SimplePDFViewer = ({ documentId, pdfUrl, targetPage, onPageChange }) => {
             src={pdfUrl}
             className="w-full h-full border-0"
             title="PDF Document"
-            onLoad={() => console.log('PDF iframe loaded successfully')}
             onError={(e) => {
-              console.error('PDF iframe failed to load:', e);
               setError('Failed to load PDF in iframe');
             }}
           />

@@ -34,7 +34,6 @@ const DocumentUpload = ({ onUploadSuccess, onUploadError }) => {
       }, 500); // Reduced delay to show PDF faster
       
     } catch (error) {
-      console.error('Upload error:', error);
       onUploadError(error.response?.data?.error || 'Upload failed');
       setUploading(false);
     }

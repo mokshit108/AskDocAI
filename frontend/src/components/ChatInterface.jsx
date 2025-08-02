@@ -47,7 +47,7 @@ const ChatInterface = ({ documentId, documentStatus, onCitationClick }) => {
       ]).flat();
       setMessages(history);
     } catch (error) {
-      console.error('Failed to load chat history:', error);
+      // Handle error silently
     }
   };
 
@@ -82,11 +82,7 @@ const ChatInterface = ({ documentId, documentStatus, onCitationClick }) => {
     setError(null);
 
     try {
-      console.log(`Sending message to document ${documentId}:`, userMessage.content);
-      console.log(`Document status:`, documentStatus);
-      
       const response = await chatAPI.sendMessage(documentId, userMessage.content);
-      console.log('Chat API response:', response.data);
       
       const responseData = response.data.data || response.data;
       const assistantMessage = {
@@ -99,8 +95,6 @@ const ChatInterface = ({ documentId, documentStatus, onCitationClick }) => {
       
       setMessages(prev => [...prev, assistantMessage]);
     } catch (error) {
-      console.error('Chat error:', error);
-      console.error('Error response:', error.response?.data);
       setError(error.response?.data?.error || 'Failed to send message');
       
       const errorMessage = {

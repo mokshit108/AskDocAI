@@ -29,14 +29,12 @@ function App() {
       // Check if any documents are still processing and start polling for them
       documentsData.forEach(doc => {
         if (doc.status === 'processing') {
-          console.log(`Found processing document ${doc.id}, starting polling...`);
           pollDocumentStatus(doc.id);
         }
       });
       
       // If no documents, selectedDocument will remain null and upload will show
     } catch (error) {
-      console.error('Failed to load documents:', error);
       setError('Failed to load documents');
     } finally {
       setLoading(false);
@@ -45,7 +43,6 @@ function App() {
 
   const handleUploadSuccess = (document: Document) => {
     if (!document || !document.id) {
-      console.error('Invalid document data received:', document);
       setError('Invalid document data received from server');
       return;
     }
@@ -70,7 +67,6 @@ function App() {
   const pollDocumentStatus = async (documentId: string) => {
     // Prevent multiple polling instances for the same document
     if (pollingInstances.current.has(documentId)) {
-      console.log(`Polling already active for document ${documentId}`);
       return;
     }
 
@@ -80,12 +76,9 @@ function App() {
 
     const poll = async () => {
       try {
-        console.log(`Polling document ${documentId}, attempt ${attempts + 1}`);
         const response = await documentsAPI.getById(documentId);
         // Handle both direct document response and wrapped response
         const document = response.data.data || response.data;
-        
-        console.log(`Document ${documentId} status:`, document.status);
 
         // Update document in list
         setDocuments(prev => 
@@ -95,7 +88,6 @@ function App() {
         // Update selected document if it's the current one
         setSelectedDocument(prev => {
           if (prev?.id === documentId) {
-            console.log(`Updating selected document status to: ${document.status}`);
             return document;
           }
           return prev;
@@ -104,15 +96,12 @@ function App() {
         // Continue polling if still processing
         if (document.status === 'processing' && attempts < maxAttempts) {
           attempts++;
-          console.log(`Document still processing, scheduling next poll in 3 seconds...`);
           setTimeout(poll, 3000); // Poll every 3 seconds for faster updates
         } else {
-          console.log(`Polling stopped. Status: ${document.status}, Attempts: ${attempts}`);
           // Remove from active polling instances
           pollingInstances.current.delete(documentId);
         }
       } catch (error) {
-        console.error('Failed to poll document status:', error);
         // Retry polling even on error, but with longer delay
         if (attempts < maxAttempts) {
           attempts++;
@@ -155,11 +144,9 @@ function App() {
         setSelectedDocument({ ...selectedDocument, status: 'processing' });
         // Start polling for status updates
         pollDocumentStatus(selectedDocument.id);
-      } else {
-        console.error('Failed to retry processing');
       }
     } catch (error) {
-      console.error('Error retrying processing:', error);
+      // Handle error silently or show user-friendly message
     }
   };
 

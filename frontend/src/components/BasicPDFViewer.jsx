@@ -1,7 +1,6 @@
 import React from 'react';
 
 const BasicPDFViewer = ({ documentId, pdfUrl, targetPage, onPageChange }) => {
-  console.log('BasicPDFViewer loaded with URL:', pdfUrl);
 
   if (!pdfUrl) {
     return (
@@ -19,8 +18,6 @@ const BasicPDFViewer = ({ documentId, pdfUrl, targetPage, onPageChange }) => {
         src={pdfUrl}
         className="w-full h-full border-0"
         title="PDF Document"
-        onLoad={() => console.log('PDF loaded successfully in iframe')}
-        onError={(e) => console.error('PDF iframe error:', e)}
       />
     </div>
   );

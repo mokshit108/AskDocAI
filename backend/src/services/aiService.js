@@ -6,7 +6,7 @@ class AIService {
   constructor() {
     this.genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY);
     this.model = this.genAI.getGenerativeModel({ 
-      model: "gemini-pro",
+      model: "models/gemini-pro",
       generationConfig: {
         temperature: 0.3,
         topK: 40,

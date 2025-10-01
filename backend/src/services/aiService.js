@@ -1,40 +1,26 @@
-const { GoogleGenerativeAI } = require('@google/generative-ai');
+const axios = require('axios');
 const VectorService = require('./vectorService');
 const Document = require('../models/Document');
 
 class AIService {
   constructor() {
-    this.genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY);
-    this.model = this.genAI.getGenerativeModel({ 
-      model: "models/gemini-pro",
-      generationConfig: {
-        temperature: 0.3,
-        topK: 40,
-        topP: 0.95,
-        maxOutputTokens: 1024,
-      },
-    });
+    this.groqApiKey = process.env.GROQ_API_KEY; // Set this in your .env
+    this.groqModel = 'llama3-70b-8192'; // Or another supported model
     this.vectorService = new VectorService();
   }
 
   async generateResponse(question, documentId) {
     try {
       console.log(`Generating response for document ${documentId}, question: "${question}"`);
-      
       // First, try vector search
       const similarChunks = await this.vectorService.searchSimilar(question, documentId, 3);
-      
       let contextText = '';
       let citations = [];
-
       if (similarChunks.length > 0) {
         console.log(`Using vector search results: ${similarChunks.length} chunks found`);
-        
         contextText = similarChunks
           .map(chunk => `[Page ${chunk.metadata.pageNumber}]: ${chunk.metadata.text}`)
           .join('\n\n');
-
-        // Extract citations
         citations = similarChunks.map(chunk => ({
           pageNumber: chunk.metadata.pageNumber,
           relevanceScore: chunk.score,
@@ -42,14 +28,10 @@ class AIService {
         }));
       } else {
         console.log('No vector results found, using fallback search');
-        
-        // Fallback: get document from database and use text search
         const document = await Document.findByPk(documentId);
-        
         if (!document) {
           throw new Error('Document not found');
         }
-
         if (document.pagesData && document.pagesData.length > 0) {
           console.log(`Using database pages data: ${document.pagesData.length} pages`);
           const searchResults = this.simpleTextSearch(question, document.pagesData);
@@ -57,7 +39,6 @@ class AIService {
           citations = searchResults.citations;
         } else if (document.extractedText) {
           console.log('Using extracted text for fallback search');
-          // Split extracted text into rough pages
           const textChunks = this.splitTextIntoChunks(document.extractedText, document.totalPages || 1);
           const searchResults = this.simpleTextSearch(question, textChunks);
           contextText = searchResults.context;
@@ -67,42 +48,34 @@ class AIService {
           contextText = 'No document content available for analysis.';
         }
       }
-
       if (!contextText || contextText.trim() === '') {
         contextText = 'No relevant content found in the document for this question.';
       }
-
       console.log(`Context length: ${contextText.length} characters`);
-
-      const systemPrompt = `You are an AI assistant that helps users understand PDF documents. 
-      Answer questions based on the provided context from the document. 
-      Always cite the page numbers where you found the information.
-      If the information is not in the context, say so clearly.
-      Keep responses concise but informative.
-      Be helpful and accurate.`;
-
-      const userPrompt = `Context from document:
-${contextText}
-
-Question: ${question}
-
-Please provide a helpful answer based on the context above, and indicate which pages contain the relevant information. If you cannot find relevant information in the context, please say so clearly.`;
-
-      console.log('Sending request to Gemini...');
-
-      const result = await this.model.generateContent([
-        { text: systemPrompt },
-        { text: userPrompt }
-      ]);
-
-      const response = await result.response;
-      const answer = response.text();
-
-      // Estimate token usage (Gemini doesn't provide exact count)
-      const estimatedTokens = Math.ceil((systemPrompt + userPrompt + answer).length / 4);
-
+      const systemPrompt = `You are an AI assistant that helps users understand PDF documents. \nAnswer questions based on the provided context from the document. \nAlways cite the page numbers where you found the information.\nIf the information is not in the context, say so clearly.\nKeep responses concise but informative.\nBe helpful and accurate.`;
+      const userPrompt = `Context from document:\n${contextText}\n\nQuestion: ${question}\n\nPlease provide a helpful answer based on the context above, and indicate which pages contain the relevant information. If you cannot find relevant information in the context, please say so clearly.`;
+      console.log('Sending request to Groq...');
+      const response = await axios.post(
+        'https://api.groq.com/openai/v1/chat/completions',
+        {
+          model: this.groqModel,
+          messages: [
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: userPrompt }
+          ],
+          max_tokens: 1024,
+          temperature: 0.3
+        },
+        {
+          headers: {
+            'Authorization': `Bearer ${this.groqApiKey}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+      const answer = response.data.choices[0].message.content;
+      const estimatedTokens = response.data.usage?.total_tokens || 0;
       console.log(`Response generated successfully, estimated tokens: ${estimatedTokens}`);
-
       return {
         answer,
         citations,
@@ -110,26 +83,20 @@ Please provide a helpful answer based on the context above, and indicate which p
       };
     } catch (error) {
       console.error('AI response generation error:', error);
-      
-      // Handle rate limiting
-      if (error.message?.includes('429') || error.message?.includes('quota')) {
+      if (error.response && error.response.status === 429) {
         return {
           answer: "I'm currently experiencing high demand. Please try again in a moment.",
           citations: [],
           tokensUsed: 0
         };
       }
-      
-      // Handle other API errors
-      if (error.message?.includes('API')) {
+      if (error.response && error.response.status === 401) {
         return {
-          answer: "I'm having trouble connecting to the AI service. Please try again later.",
+          answer: "Authentication error with Groq API. Please check your API key.",
           citations: [],
           tokensUsed: 0
         };
       }
-      
-      // Generic fallback response
       return {
         answer: "I apologize, but I'm having trouble processing your question right now. This could be due to technical issues. Please try again in a moment, or rephrase your question.",
         citations: [],
@@ -245,17 +212,27 @@ ${contextText}
 
 Generate questions that would help users understand the main topics, key concepts, and important details in this document.`;
 
-      console.log('Generating question suggestions with Gemini...');
+      console.log('Generating question suggestions with Groq...');
 
-      const result = await this.model.generateContent([
-        { text: systemPrompt },
-        { text: userPrompt }
-      ]);
-
-      const response = await result.response;
-      const suggestionsText = response.text();
-
-      // Parse suggestions from response
+      const response = await axios.post(
+        'https://api.groq.com/openai/v1/chat/completions',
+        {
+          model: this.groqModel,
+          messages: [
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: userPrompt }
+          ],
+          max_tokens: 1024,
+          temperature: 0.3
+        },
+        {
+          headers: {
+            'Authorization': `Bearer ${this.groqApiKey}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+      const suggestionsText = response.data.choices[0].message.content;
       const suggestions = suggestionsText
         .split('\n')
         .map(line => line.trim())
